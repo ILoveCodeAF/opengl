@@ -19,7 +19,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/$*.Td
 POSTCOMPILE = mv -f $(DEP_DIR)/$*.Td $(DEP_DIR)/$*.d
 
 
-TARGET := main
+TARGET := opengl
 
 all: option $(TARGET)
 	@echo "done."
