@@ -2,8 +2,12 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>//glm::make_mat4()
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
+
+#define PI 3.14159265
 
 #include "shader.h"
 
@@ -110,14 +114,38 @@ int main(){
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
 	// glm::mat4 Projection = glm::ortho(-2.0f, (float)width/100, (float)height/100, -2.0f, 0.0f, 10.0f);
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(4,3,3), // Camera is at (4,3,3), in World Space
+		glm::vec3(8,6,6), // Camera is at (4,3,3), in World Space
 		glm::vec3(0,0,0), // and looks at the origin
 		glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
     );
-	glm::mat4 Model = glm::mat4(1.0f);
-	glm::mat4 mvp = Projection * View * Model;
 
+	// float aaa[16] = {
+	// 	1, 0, 0, 0,
+	// 	0, 1, 0, 0,
+	// 	0, 0, 1, 0,
+	// 	2, 1, 0, 1
+	// };
+
+	// glm::mat4 Model = glm::make_mat4(aaa);//glm::mat4(1.0f);
+	// glm::mat4 mvp = Projection * View * Model;
+
+	int t = 0;
+	float theta = 0;
 	do{
+		theta = (float)t*PI/180;
+		float aaa[16] = {
+			cos(theta), 	0, 	-sin(theta), 	0,
+			0, 				1, 	0, 				0,
+			sin(theta), 	0, 	cos(theta), 	0,
+			(float)t/60, 	1, 	0, 				1
+		};
+		if(t == 360)
+			t = -1;
+		t++;
+
+		glm::mat4 Model = glm::make_mat4(aaa);//glm::mat4(1.0f);
+		glm::mat4 mvp = Projection * View * Model;
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 		glUseProgram(programID);
