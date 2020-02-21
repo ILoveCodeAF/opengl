@@ -10,6 +10,7 @@
 #define PI 3.14159265
 
 #include "shader.h"
+#include "texture.h"
 
 int main(){
 	glewExperimental = true;
@@ -51,43 +52,64 @@ int main(){
 	glGenVertexArrays(1, &vertexArrayID);
 	glBindVertexArray(vertexArrayID);
 
+	//			(-1, -1, 1)	
+	//					----------------- (1, -1, 1)
+	//                 /|				/|
+	//                /	|			   / |
+	//  (-1, 1, 1)   /__|_____________/	 | (1, 1, 1)
+	//				|	|		z	  |  |
+	//				|	|		|__x  |  |
+	//				|	|		/	  |  |
+	//				|	|		y	  |  |
+	//	(-1, -1, -1)|	--------------|--| (1, -1, -1)
+	//              |  /			  | /
+	//              | /				  |/
+	//  (-1,  1, -1)|/________________|  (1, 1, -1)
+	//
+	//
+	//(-1, -1, -1) (-1, -1, -1) (-1, -1, -1) (-1, -1, -1)
 	static const GLfloat g_vertex_buffer_data[] = {
-		-1.0f,-1.0f,-1.0f, // triangle 1 : begin
-		-1.0f,-1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f, // triangle 1 : end
-		1.0f, 1.0f,-1.0f, // triangle 2 : begin
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f,-1.0f, // triangle 2 : end
+		-1.0f, 1.0f, -1.0f, // triangle 1 : begin
+		1.0f,-1.0f, -1.0f,
+		1.0f, 1.0f, -1.0f, // triangle 1 : end
+		-1.0f, 1.0f, -1.0f, // triangle 1 : begin
+		1.0f,-1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+
+		-1.0f, 1.0f, 1.0f, // triangle 1 : begin
 		1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f,-1.0f,
-		1.0f,-1.0f,-1.0f,
-		1.0f, 1.0f,-1.0f,
-		1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f,-1.0f,
+		1.0f, 1.0f, 1.0f, // triangle 1 : end
+		-1.0f, 1.0f, 1.0f, // triangle 1 : begin
 		1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f,-1.0f, 1.0f,
-		1.0f,-1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f,
+
+		-1.0f, 1.0f, -1.0f,
 		1.0f, 1.0f, 1.0f,
-		1.0f,-1.0f,-1.0f,
-		1.0f, 1.0f,-1.0f,
-		1.0f,-1.0f,-1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f,-1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f,-1.0f,
-		-1.0f, 1.0f,-1.0f,
-		1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, -1.0f,
+		-1.0f, 1.0f, -1.0f,
 		1.0f, 1.0f, 1.0f,
 		-1.0f, 1.0f, 1.0f,
-		1.0f,-1.0f, 1.0f
+
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, 1.0f,
+		1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f,
+
+		1.0f, -1.0f, -1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f
 	};
 
 	GLuint vertexBuffer;
@@ -95,20 +117,62 @@ int main(){
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-	GLfloat g_color_buffer_data[12*3*3];
-	srand(time(NULL));
-	for(int i = 0; i < 12*3*3; ++i){
-		g_color_buffer_data[i] = static_cast<float>(rand()) / static_cast<float> (RAND_MAX);
-	}
+	GLfloat g_uv_buffer_data[12*3*2] = {
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		1.0f, 1.0f - 0.0f,
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		0.0f, 1.0f - 1.0f,
 
-	GLuint colorBuffer;
-	glGenBuffers(1, &colorBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		1.0f, 1.0f - 0.0f,
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		0.0f, 1.0f - 1.0f,
+
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		1.0f, 1.0f - 0.0f,
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		0.0f, 1.0f - 1.0f,
+
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		1.0f, 1.0f - 0.0f,
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		0.0f, 1.0f - 1.0f,
+
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		1.0f, 1.0f - 0.0f,
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		0.0f, 1.0f - 1.0f,
+
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		1.0f, 1.0f - 0.0f,
+		0.0f, 1.0f - 0.0f,
+		1.0f, 1.0f - 1.0f,
+		0.0f, 1.0f - 1.0f,
+	};
+
+	GLuint uvBuffer;
+	glGenBuffers(1, &uvBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 
 
 	GLuint programID = loadShaders( "shader/vertex_shader.vertexshader", "shader/fragment_shader.fragmentshader");
-	
+
+	GLuint texture = loadBMP_custom("img/image.bmp");
+
+	GLuint textureID = glGetUniformLocation(programID, "myTexture");
+
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
@@ -119,16 +183,6 @@ int main(){
 		glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
     );
 
-	// float aaa[16] = {
-	// 	1, 0, 0, 0,
-	// 	0, 1, 0, 0,
-	// 	0, 0, 1, 0,
-	// 	2, 1, 0, 1
-	// };
-
-	// glm::mat4 Model = glm::make_mat4(aaa);//glm::mat4(1.0f);
-	// glm::mat4 mvp = Projection * View * Model;
-
 	int t = 0;
 	float theta = 0;
 	do{
@@ -137,7 +191,7 @@ int main(){
 			cos(theta), 	0, 	-sin(theta), 	0,
 			0, 				1, 	0, 				0,
 			sin(theta), 	0, 	cos(theta), 	0,
-			(float)t/60, 	1, 	0, 				1
+			(float)0/60, 	1, 	0, 				1
 		};
 		if(t == 360)
 			t = -1;
@@ -151,6 +205,10 @@ int main(){
 		glUseProgram(programID);
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glUniform1i(textureID, 0);
+
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 		glVertexAttribPointer(
@@ -163,10 +221,10 @@ int main(){
 		);
 
 		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
 		glVertexAttribPointer(
 				1,
-				3,
+				2,
 				GL_FLOAT,
 				GL_FALSE,
 				0,
@@ -188,12 +246,12 @@ int main(){
 
 	// Cleanup VBO and shader
 	glDeleteBuffers(1, &vertexBuffer);
-	glDeleteBuffers(1, &colorBuffer);
+	glDeleteBuffers(1, &uvBuffer);
 	glDeleteProgram(programID);
+	glDeleteTextures(1, &texture);
 	glDeleteVertexArrays(1, &vertexArrayID);
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
-
 	return 0;
 }
